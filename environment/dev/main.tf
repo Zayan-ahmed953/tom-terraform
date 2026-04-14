@@ -89,3 +89,9 @@ module "elasticache" {
 
   allowed_security_group_ids = [module.sg.security_group_id]
 }
+
+module "s3" {
+  source = "../../modules/s3"
+
+  bucket_name = "tom-uploads-5767655678"
+}
