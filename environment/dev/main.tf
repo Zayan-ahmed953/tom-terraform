@@ -1,55 +1,40 @@
 module "vpc" {
   source = "../../modules/vpc"
 
-  name                = "staging"
-  vpc_cidr            = "10.0.0.0/16"
-  public_subnet_cidr  = "10.0.1.0/24"
-  private_subnet_cidr = "10.0.2.0/24"
-  public_subnet_az    = "eu-west-2a"
-  private_subnet_az   = "eu-west-2b"
+  name                = var.vpc_name
+  vpc_cidr            = var.vpc_cidr
+  public_subnet_cidr  = var.public_subnet_cidr
+  private_subnet_cidr = var.private_subnet_cidr
+  public_subnet_az    = var.public_subnet_az
+  private_subnet_az   = var.private_subnet_az
 }
 
 module "sg" {
   source = "../../modules/sg"
 
-  name        = "dev-server-sg"
-  description = "Security group for dev server"
+  name        = var.sg_name
+  description = var.sg_description
   vpc_id      = module.vpc.vpc_id
 
-  ingress_rules = [
-    {
-      description = "SSH access"
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = ["139.135.36.209/32", "0.0.0.0/0"]
-    },
-    {
-      description = "HTTPS access"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
+  ingress_rules = var.sg_ingress_rules
 }
 
 module "ec2" {
   source = "../../modules/ec2"
 
-  name                   = "dev-server"
-  instance_type          = "t3.micro"
+  name                   = var.ec2_name
+  instance_type          = var.ec2_instance_type
   subnet_id              = module.vpc.public_subnet_id
   vpc_security_group_ids = [module.sg.security_group_id]
-  attach_eip             = true
+  attach_eip             = var.ec2_attach_eip
 }
 
 data "aws_secretsmanager_secret_version" "rds_credentials" {
-  secret_id = "dev-ai_sourcing-RDS-Secrets"
+  secret_id = var.rds_secret_id
 }
 
 data "aws_secretsmanager_secret_version" "elasticache_credentials" {
-  secret_id = "dev-ai_sourcing-ElastiCache-Secrets"
+  secret_id = var.elasticache_secret_id
 }
 
 locals {
@@ -60,10 +45,10 @@ locals {
 module "rds" {
   source = "../../modules/rds"
 
-  name           = "tom-db"
-  db_name        = "tom"
-  engine_version = "16"
-  instance_class = "db.t4g.micro"
+  name           = var.rds_name
+  db_name        = var.rds_db_name
+  engine_version = var.rds_engine_version
+  instance_class = var.rds_instance_class
 
   username = local.rds_credentials["DB_USER"]
   password = local.rds_credentials["DB_PASSWORD"]
@@ -71,8 +56,8 @@ module "rds" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = [module.vpc.public_subnet_id, module.vpc.private_subnet_id]
 
-  publicly_accessible = true
-  allowed_cidr_blocks = ["0.0.0.0/0"]
+  publicly_accessible = var.rds_publicly_accessible
+  allowed_cidr_blocks = var.rds_allowed_cidr_blocks
 
   allowed_security_group_ids = [module.sg.security_group_id]
 }
@@ -80,12 +65,12 @@ module "rds" {
 module "elasticache" {
   source = "../../modules/elasticache"
 
-  name       = "tom-cache"
+  name       = var.elasticache_name
   vpc_id     = module.vpc.vpc_id
   subnet_ids = [module.vpc.public_subnet_id, module.vpc.private_subnet_id]
 
   auth_token          = local.elasticache_credentials["AUTH_TOKEN"]
-  allowed_cidr_blocks = ["0.0.0.0/0"]
+  allowed_cidr_blocks = var.elasticache_allowed_cidr_blocks
 
   allowed_security_group_ids = [module.sg.security_group_id]
 }
@@ -93,5 +78,5 @@ module "elasticache" {
 module "s3" {
   source = "../../modules/s3"
 
-  bucket_name = "tom-uploads-5767655678"
+  bucket_name = var.s3_bucket_name
 }
