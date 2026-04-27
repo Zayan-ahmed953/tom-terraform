@@ -14,3 +14,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "iam_user_arn" {
+  description = "ARN of the IAM user to grant S3 access via bucket policy. No policy is created if empty."
+  type        = string
+  default     = ""
+}

@@ -1,25 +1,15 @@
-resource "aws_s3_bucket" "this" {
-  bucket        = var.bucket_name
-  force_destroy = var.force_destroy
+resource "aws_iam_user" "this" {
+  name = var.name
 
-  tags = merge(
-    {
-      Name = var.bucket_name
-    },
-    var.tags
-  )
+  tags = {
+    Name = var.name
+  }
 }
 
-data "aws_iam_policy_document" "bucket_policy" {
-  count = var.iam_user_arn != "" ? 1 : 0
-
+data "aws_iam_policy_document" "s3_access" {
   statement {
-    sid    = "AllowFullAccessExceptDelete"
+    sid    = "AllowS3FullAccessExceptDelete"
     effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = [var.iam_user_arn]
-    }
     actions = [
       "s3:GetObject",
       "s3:GetObjectVersion",
@@ -40,18 +30,14 @@ data "aws_iam_policy_document" "bucket_policy" {
       "s3:ListBucketMultipartUploads",
     ]
     resources = [
-      aws_s3_bucket.this.arn,
-      "${aws_s3_bucket.this.arn}/*",
+      "arn:aws:s3:::${var.s3_bucket_name}",
+      "arn:aws:s3:::${var.s3_bucket_name}/*",
     ]
   }
 
   statement {
     sid    = "DenyAllDeleteActions"
     effect = "Deny"
-    principals {
-      type        = "AWS"
-      identifiers = [var.iam_user_arn]
-    }
     actions = [
       "s3:DeleteObject",
       "s3:DeleteObjectVersion",
@@ -60,14 +46,14 @@ data "aws_iam_policy_document" "bucket_policy" {
       "s3:DeleteBucketWebsite",
     ]
     resources = [
-      aws_s3_bucket.this.arn,
-      "${aws_s3_bucket.this.arn}/*",
+      "arn:aws:s3:::${var.s3_bucket_name}",
+      "arn:aws:s3:::${var.s3_bucket_name}/*",
     ]
   }
 }
 
-resource "aws_s3_bucket_policy" "this" {
-  count  = var.iam_user_arn != "" ? 1 : 0
-  bucket = aws_s3_bucket.this.id
-  policy = data.aws_iam_policy_document.bucket_policy[0].json
+resource "aws_iam_user_policy" "s3_access" {
+  name   = "${var.name}-s3-access"
+  user   = aws_iam_user.this.name
+  policy = data.aws_iam_policy_document.s3_access.json
 }

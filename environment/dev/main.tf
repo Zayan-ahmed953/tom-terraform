@@ -23,10 +23,25 @@ module "ec2" {
   source = "../../modules/ec2"
 
   name                   = var.ec2_name
+  ami                    = var.ec2_ami
   instance_type          = var.ec2_instance_type
+  root_volume_size       = var.ec2_root_volume_size
   subnet_id              = module.vpc.public_subnet_id
   vpc_security_group_ids = [module.sg.security_group_id]
   attach_eip             = var.ec2_attach_eip
+  source_dest_check      = false
+}
+
+data "aws_security_group" "staging_sg" {
+  filter {
+    name   = "group-name"
+    values = ["staging-sg"]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [module.vpc.vpc_id]
+  }
 }
 
 data "aws_secretsmanager_secret_version" "rds_credentials" {
@@ -59,7 +74,7 @@ module "rds" {
   publicly_accessible = var.rds_publicly_accessible
   allowed_cidr_blocks = var.rds_allowed_cidr_blocks
 
-  allowed_security_group_ids = [module.sg.security_group_id]
+  allowed_security_group_ids = [module.sg.security_group_id, data.aws_security_group.staging_sg.id]
 }
 
 module "elasticache" {
@@ -75,8 +90,16 @@ module "elasticache" {
   allowed_security_group_ids = [module.sg.security_group_id]
 }
 
+module "iam_s3_user" {
+  source = "../../modules/iam"
+
+  name           = var.iam_s3_user_name
+  s3_bucket_name = var.s3_bucket_name
+}
+
 module "s3" {
   source = "../../modules/s3"
 
-  bucket_name = var.s3_bucket_name
+  bucket_name  = var.s3_bucket_name
+  iam_user_arn = module.iam_s3_user.iam_user_arn
 }

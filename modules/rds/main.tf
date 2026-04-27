@@ -20,12 +20,15 @@ resource "aws_security_group" "this" {
     security_groups = var.allowed_security_group_ids
   }
 
-  ingress {
-    description = "PostgreSQL access from anywhere"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = var.allowed_cidr_blocks
+  dynamic "ingress" {
+    for_each = length(var.allowed_cidr_blocks) > 0 ? [1] : []
+    content {
+      description = "PostgreSQL access from anywhere"
+      from_port   = 5432
+      to_port     = 5432
+      protocol    = "tcp"
+      cidr_blocks = var.allowed_cidr_blocks
+    }
   }
 
   egress {

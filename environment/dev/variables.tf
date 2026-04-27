@@ -59,6 +59,18 @@ variable "ec2_instance_type" {
   description = "EC2 instance type."
 }
 
+variable "ec2_ami" {
+  type        = string
+  description = "AMI ID for the EC2 instance. If not set, the latest Ubuntu 24.04 AMI is used."
+  default     = null
+}
+
+variable "ec2_root_volume_size" {
+  type        = number
+  description = "Size of the root EBS volume in GB."
+  default     = 30
+}
+
 variable "ec2_attach_eip" {
   type        = bool
   description = "Whether to attach an Elastic IP to EC2."
@@ -117,4 +129,9 @@ variable "elasticache_allowed_cidr_blocks" {
 variable "s3_bucket_name" {
   type        = string
   description = "Name of the uploads S3 bucket."
+}
+
+variable "iam_s3_user_name" {
+  type        = string
+  description = "Name of the IAM user with S3 access."
 }

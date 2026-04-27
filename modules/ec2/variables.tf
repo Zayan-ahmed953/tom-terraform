@@ -24,3 +24,21 @@ variable "attach_eip" {
   type        = bool
   default     = false
 }
+
+variable "ami" {
+  description = "AMI ID to use for the instance. If not set, the latest Ubuntu 24.04 AMI is used."
+  type        = string
+  default     = null
+}
+
+variable "root_volume_size" {
+  description = "Size of the root EBS volume in GB"
+  type        = number
+  default     = 8
+}
+
+variable "source_dest_check" {
+  description = "Whether to enable source/destination check on the instance"
+  type        = bool
+  default     = true
+}
